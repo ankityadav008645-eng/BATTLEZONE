@@ -19,7 +19,13 @@ function shell(){
  <footer>Fan-made community app • Not affiliated with Garena / Free Fire.</footer>
  <div id="modal" class="modal hidden"></div><div id="toast" class="toast"></div>`;
  $('#authBtn').onclick=()=>state.user?signOut():authModal();
- document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render()});
+ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
+ state.tab=b.dataset.tab;
+ document.querySelectorAll('[data-tab]').forEach(x=>{
+  x.classList.toggle('active',x.dataset.tab===state.tab);
+ });
+ renderContent();
+});
  renderContent();
 }
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),3200)}
