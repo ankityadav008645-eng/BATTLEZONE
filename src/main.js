@@ -68,6 +68,11 @@ async function loadData(){
   state.entries=(r.data||[]).map(x=>({...x,event_title:x.tournaments?.title}));
   if(state.admin){const a=await supabase.from('registrations').select('*, tournaments(title)').order('created_at',{ascending:false});state.adminEntries=(a.data||[]).map(x=>({...x,event_title:x.tournaments?.title}));}
  }
+ const roomResult = state.user
+  ? await supabase.from('tournament_rooms').select('*')
+  : { data: [] };
+
+state.rooms = roomResult.data || [];
  await loadEvents();shell();
 }
 function registerModal(id){
@@ -78,7 +83,7 @@ function registerModal(id){
  $('#regForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),payload={tournament_id:id,player_id:state.user.id,team_name:f.get('team_name'),game_uid:f.get('game_uid'),team_size:f.get('team_size')};let {error}=await supabase.from('registrations').insert(payload);if(error){toast(error.message);return}$('#modal').classList.add('hidden');toast('Registration submitted.');await loadData()};
 }
 async function createEvent(e){e.preventDefault();let f=new FormData(e.target),payload={title:f.get('title'),mode:f.get('mode'),map_name:f.get('map_name'),starts_at:f.get('starts_at')?new Date(f.get('starts_at')).toISOString():null,max_slots:Number(f.get('max_slots')),entry_fee:Number(f.get('entry_fee')),prize_pool:Number(f.get('prize_pool')),status:'open',created_by:state.user.id};let {error}=await supabase.from('tournaments').insert(payload);if(error){toast(error.message);return}toast('Tournament published.');await loadData();state.tab='admin';render()}
-async function toggleEvent(id,status){let {error}=await supabase.from('tournaments').update({status:status==='open'?'closed':'open'}).eq('id',id);if(error){toast(error.message);return}await loadData();state.tab='admin';render()}
+async function toggleEvent(id,status){let {error}=await supabase.from('tournaments').update({status:status==='open'?'closed':'open'}).eq('id',id);if(error){toast(error.message);return}await loadData();state.tab='admin';renderContent()}
 async function init(){
  if(supabase){supabase.auth.onAuthStateChange(()=>{setTimeout(()=>loadData(),0)});await loadData()}else{state.events=[];shell();$('#content').innerHTML='<div class="card"><h2>Setup needed</h2><p>This starter needs a Supabase project before login and shared data work.</p><p class="muted">Open SETUP.md in the downloaded ZIP and follow the steps. Do not put a service-role key in this app.</p><button class="primary" onclick="location.href=\'https://supabase.com/\'">Open Supabase</button></div>'}
 }
