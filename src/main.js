@@ -44,8 +44,25 @@ function renderContent(){
   c.innerHTML=`<div class="section"><h2>👑 Owner console</h2><p class="muted">Signed in with server-verified owner role.</p></div>
   <div class="card"><h3>Create tournament</h3><form id="eventForm"><label>Title<input name="title" required maxlength="80"></label><div class="two"><label>Mode<select name="mode"><option>Solo</option><option>Duo</option><option>Squad</option></select></label><label>Map<input name="map_name" value="Bermuda"></label></div><label>Start date/time<input name="starts_at" type="datetime-local"></label><div class="two"><label>Max slots<input name="max_slots" type="number" min="2" max="1000" value="48" required></label><label>Entry fee (₹)<input name="entry_fee" type="number" min="0" value="0" required></label></div><label>Prize pool (₹)<input name="prize_pool" type="number" min="0" value="0" required></label><button class="primary">Publish tournament</button></form></div>
   <div class="card"><h3>Manage tournaments</h3>${state.events.map(e=>`<div class="adminrow"><div><b>${esc(e.title)}</b><small>${esc(e.mode)} · ${esc(e.status)}</small></div><button class="outline" data-toggle="${e.id}" data-status="${e.status}">${e.status==='open'?'Close':'Reopen'}</button></div>`).join('')||'<p class="muted">No events.</p>'}</div>
-  <div class="card"><h3>Registrations & results</h3><p class="fine">Payment ledger and payout processing are intentionally not enabled in this starter. Integrate a licensed payment provider server-side before handling real money.</p>${state.adminEntries?.length?state.adminEntries.map(x=>`<div class="adminrow"><div><b>${esc(x.team_name)}</b><small>${esc(x.event_title||'')} · ${esc(x.status)}</small></div><span class="tag">${esc(x.game_uid)}</span></div>`).join(''):'<p class="muted">No registrations available.</p>'}</div>`;
+  <div class="card"><h3>Registrations & results</h3><p class="fine">Payment ledger and payout processing are intentionally not enabled in this starter. Integrate a licensed payment provider server-side before handling real money.</p>${state.adminEntries?.length?state.adminEntries.map(x=>`<div class="adminrow"><div><b>${esc(x.team_name)}</b><small>${esc(x.event_title||'')} · ${esc(x.status)}</small></div><span class="tag">${esc(x.game_uid)}</span></div>`).join(''):'<p class="muted">No registrations available.</p>'}</div><div class="card">
+   <h3>🎮 Tournament Room Details</h3>
+   <form id="roomForm">
+    <label>Select tournament
+     <select name="tournament_id" required>
+      ${state.events.map(e=>`<option value="${e.id}">${esc(e.title)}</option>`).join('')}
+     </select>
+    </label>
+    <label>Room ID
+     <input name="room_id" required>
+    </label>
+    <label>Room Password
+     <input name="room_password" required>
+    </label>
+    <button class="primary">Save Room Details</button>
+   </form>
+  </div>`;
   $('#eventForm').onsubmit=createEvent;
+  $('#roomForm').onsubmit=saveRoom;
   c.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>toggleEvent(b.dataset.toggle,b.dataset.status));
  }
 }
@@ -81,6 +98,24 @@ function registerModal(id){
  $('#modal').innerHTML=`<div class="modalbox"><div class="row"><h2>Register team</h2><button class="outline" id="closeModal">Close</button></div><p class="muted">${esc(ev.title)}</p><form id="regForm"><input type="hidden" name="tournament_id" value="${esc(id)}"><label>Team/player name<input name="team_name" required maxlength="60"></label><label>In-game UID<input name="game_uid" required maxlength="30"></label><label>Team size<select name="team_size"><option>Solo</option><option>Duo</option><option>Squad</option></select></label><button class="primary">Submit registration</button></form><p class="fine">Registration does not process an entry-fee payment.</p></div>`;
  $('#closeModal').onclick=()=>$('#modal').classList.add('hidden');
  $('#regForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),payload={tournament_id:id,player_id:state.user.id,team_name:f.get('team_name'),game_uid:f.get('game_uid'),team_size:f.get('team_size')};let {error}=await supabase.from('registrations').insert(payload);if(error){toast(error.message);return}$('#modal').classList.add('hidden');toast('Registration submitted.');await loadData()};
+}
+async function saveRoom(e){
+ e.preventDefault();
+ const f=new FormData(e.target);
+ const payload={
+  tournament_id:f.get('tournament_id'),
+  room_id:f.get('room_id').trim(),
+  room_password:f.get('room_password').trim(),
+  updated_at:new Date().toISOString()
+ };
+ const {error}=await supabase
+  .from('tournament_rooms')
+  .upsert(payload,{onConflict:'tournament_id'});
+ if(error){toast(error.message);return}
+ toast('Room details saved successfully!');
+ await loadData();
+ state.tab='admin';
+ renderContent();
 }
 async function createEvent(e){e.preventDefault();let f=new FormData(e.target),payload={title:f.get('title'),mode:f.get('mode'),map_name:f.get('map_name'),starts_at:f.get('starts_at')?new Date(f.get('starts_at')).toISOString():null,max_slots:Number(f.get('max_slots')),entry_fee:Number(f.get('entry_fee')),prize_pool:Number(f.get('prize_pool')),status:'open',created_by:state.user.id};let {error}=await supabase.from('tournaments').insert(payload);if(error){toast(error.message);return}toast('Tournament published.');await loadData();state.tab='admin';renderContent()}
 async function toggleEvent(id,status){let {error}=await supabase.from('tournaments').update({status:status==='open'?'closed':'open'}).eq('id',id);if(error){toast(error.message);return}await loadData();state.tab='admin';renderContent()}
