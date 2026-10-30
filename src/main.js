@@ -35,7 +35,15 @@ function renderContent(){
   c.innerHTML=`<div class="section"><h2>Available tournaments</h2><p class="muted">Choose an event to register.</p></div><div class="cards">${state.events.length?state.events.map(e=>`<article class="card"><div class="row"><span class="tag">${esc(e.mode)} · ${esc(e.map_name||'Map TBA')}</span><span class="status ${e.status==='open'?'green':'red'}">${esc(e.status)}</span></div><h3>${esc(e.title)}</h3><p class="muted">${esc(e.starts_at?new Date(e.starts_at).toLocaleString():'Date to be announced')}</p><div class="metrics"><div><b>${rupee(e.prize_pool)}</b><small>Prize pool*</small></div><div><b>${Number(e.max_slots)}</b><small>Max slots</small></div><div><b>${Number(e.entry_fee)===0?'Free':rupee(e.entry_fee)}</b><small>Entry fee*</small></div></div><button class="primary" data-join="${e.id}" ${e.status!=='open'||!state.user?'disabled':''}>${!state.user?'Login to join':e.status!=='open'?'Closed':'Register team'}</button></article>`).join(''):'<div class="empty">No tournaments published yet. Check again later.</div>'}</div><p class="fine">*Only use real fees/prizes after legal review and a verified payment provider is integrated. This starter does not move money.</p>`;
   c.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>registerModal(b.dataset.join));
  }else if(state.tab==='entries'){
-  c.innerHTML=`<div class="section"><h2>My registrations</h2></div>${state.entries.length?state.entries.map(x=>`<div class="card"><div class="row"><b>${esc(x.team_name)}</b><span class="tag">${esc(x.status)}</span></div><p>${esc(x.event_title||'Tournament')}</p><p class="muted">UID: ${esc(x.game_uid)} · ${esc(x.created_at?new Date(x.created_at).toLocaleDateString():'')}</p></div>`).join(''):'<div class="empty">Login and register for a tournament to see entries here.</div>'}`;
+  c.innerHTML=`<div class="section"><h2>My registrations</h2></div>${state.entries.length?state.entries.map(x=>{
+    const room=state.rooms.find(r=>r.tournament_id===x.tournament_id);
+    return `<div class="card">
+      <div class="row"><b>${esc(x.team_name)}</b><span class="tag">${esc(x.status)}</span></div>
+      <p>${esc(x.event_title||'Tournament')}</p>
+      <p class="muted">UID: ${esc(x.game_uid)} · ${esc(x.created_at?new Date(x.created_at).toLocaleDateString():'')}</p>
+      ${room?`<div class="notice"><h3>🎮 Room Details</h3><p>Room ID: <b>${esc(room.room_id)}</b></p><p>Room Password: <b>${esc(room.room_password)}</b></p></div>`:'<p class="muted">Room details abhi publish nahi hui hain.</p>'}
+    </div>`;
+  }).join(''):'<div class="empty">Login and register for a tournament to see entries here.</div>'}`;
  }else if(state.tab==='profile'){
   c.innerHTML=`<div class="section"><h2>Your profile</h2></div><div class="card">${state.user?`<p><b>${esc(state.profile?.display_name||state.user.email)}</b></p><p class="muted">${esc(state.user.email)}</p><p class="muted">Role: ${state.admin?'Owner':'Player'}</p>`:'<p>Login to see your profile and registrations.</p>'}<button class="primary" id="profileAuth">${state.user?'Refresh account':'Login / create account'}</button></div><div class="card notice"><b>Security tip</b><p>Never share game passwords, social passwords, OTPs or payment PINs with organizers.</p></div>`;
   $('#profileAuth').onclick=()=>state.user?loadData():authModal();
