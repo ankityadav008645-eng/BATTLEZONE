@@ -4,7 +4,7 @@ import './style.css';
 const envReady = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 const supabase = envReady ? createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY) : null;
 const $ = (s) => document.querySelector(s);
-const state = { user:null, profile:null, events:[], entries:[], admin:false, tab:'events' };
+const state = { user:null, profile:null, events:[], entries:[], rooms:[], adminEntries:[], admin:false, tab:'events' };
 const esc = (v='') => String(v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rupee = v => '₹'+Number(v||0).toLocaleString('en-IN');
 
